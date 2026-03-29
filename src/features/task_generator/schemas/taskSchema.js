@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const taskSchema = z.object({
-  feature: z.string(),
+  epicTitle: z.string(),
+  epicDescription: z.string(),
   userStories: z.array(
     z.object({
       title: z.string(),

@@ -18,6 +18,7 @@ export async function generateTasks(feature) {
   let parsed;
 
   try {
+    console.log(content);
     parsed = JSON.parse(content);
   } catch (e) {
     throw new Error("Invalid JSON from AI");
