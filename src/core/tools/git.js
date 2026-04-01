@@ -1,4 +1,4 @@
-import { run as runCli } from "../skills/cliExecutor.js";
+import { run as runCli } from "../skills/misc/cliExecutor.js";
 
 export function slugify(text) {
   return text

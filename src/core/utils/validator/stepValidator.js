@@ -1,4 +1,4 @@
-import { SKILL_TYPES } from "../utils/skillTypes.js";
+import { SKILL_TYPES } from "../../utils/skillTypes.js";
 
 const VALID_SKILL_TYPES = new Set(Object.values(SKILL_TYPES));
 

@@ -1,13 +1,13 @@
-import { run as runCodeGeneration } from "../skills/codeGeneration.js";
-import { run as runWriteTest } from "../skills/writeTest.js";
-import { run as runTest } from "../skills/runTest.js";
-import { run as runFixCode } from "../skills/fixCode.js";
-import { run as runGitCommit } from "../skills/gitCommit.js";
-import { run as runCreatePr } from "../skills/createPr.js";
-import { run as runGitCreateBranch } from "../skills/gitCreateBranch.js";
+import { run as runCodeGeneration } from "../skills/code/codeGeneration.js";
+import { run as runWriteTest } from "../skills/test/writeTest.js";
+import { run as runTest } from "../skills/test/runTest.js";
+import { run as runFixCode } from "../skills/code/fixCode.js";
+import { run as runGitCommit } from "../skills/git/gitCommit.js";
+import { run as runCreatePr } from "../skills/git/createPr.js";
+import { run as runGitCreateBranch } from "../skills/git/createBranch.js";
 import { SKILL_TYPES } from "../utils/skillTypes.js";
 import { run as runOpenAi, parseJson } from "../tools/openAi.js";
-import { validateSteps } from "../validator/stepValidator.js";
+import { validateSteps } from "../utils/validator/stepValidator.js";
 import { context } from "../memory/simpleContext.js";
 
 function isTestSuccess(testResults) {
@@ -82,6 +82,11 @@ export async function run(task) {
       const testOutput = await runTest();
       context.testResults = testOutput;
     } else if (step.skill_type === SKILL_TYPES.FIX_CODE) {
+      if (context.testResults && isTestSuccess(context.testResults)) {
+        console.log("Tests are passing, skipping fix code step.");
+        continue;
+      }
+      
       const fixOutput = await runFixCode("Fix the code so all tests pass", {
         files: getFilesList(context),
         testResults: context.testResults,

@@ -1,5 +1,5 @@
-import { run as runOpenAi, parseJson } from "../tools/openAi.js";
-import { stageAll, commit, push } from "../git/gitManager.js";
+import { run as runOpenAi, parseJson } from "../../tools/openAi.js";
+import { stageAll, commit, push } from "../../tools/git.js";
 
 export async function run(task, input) {
   console.log("Running git commit skill...");

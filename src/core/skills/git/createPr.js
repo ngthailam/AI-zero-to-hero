@@ -1,5 +1,5 @@
-import { run as runOpenAi, parseJson } from "../tools/openAi.js";
-import { run as runCli } from "./cliExecutor.js";
+import { run as runOpenAi, parseJson } from "../../tools/openAi.js";
+import { run as runCli } from "../misc/cliExecutor.js";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -11,11 +11,7 @@ export async function run(task, input) {
 
   const prompt = `
     You are a senior software engineer writing a GitHub pull request.
-
-    Task completed: ${task}
-    Files changed: ${JSON.stringify(files?.map((f) => f.path) ?? [])}
-    Test results: ${testResults?.output ?? "N/A"}
-
+    
     Write a short PR title and a markdown body summarizing what was done and why.
 
     Output: A JSON object in the following format:

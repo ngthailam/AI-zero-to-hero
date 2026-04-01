@@ -1,4 +1,4 @@
-import { run as runOpenAi, parseJson } from "../tools/openAi.js";
+import { run as runOpenAi, parseJson } from "../../tools/openAi.js";
 import fs from "fs";
 import path from "path";
 

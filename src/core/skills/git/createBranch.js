@@ -1,4 +1,4 @@
-import { createBranch, slugify } from "../git/gitManager.js";
+import { createBranch, slugify } from "../../tools/git.js";
 
 export async function run(task) {
   console.log("Running create branch skill...");
