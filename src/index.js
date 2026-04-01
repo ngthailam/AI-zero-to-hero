@@ -6,8 +6,6 @@ import express from "express";
 
 const app = express();
 
-console.log("API KEY:", process.env.OPENAI_API_KEY);
-
 app.use(express.json());
 app.use("/api/tasks", taskRoutes);
 

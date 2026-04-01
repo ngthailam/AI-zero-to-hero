@@ -8,7 +8,7 @@ router.post("/generate", async (req, res) => {
     const { task } = req.body;
 
     if (!task) {
-      return res.status(400).json({ error: "Feature is required" });
+      return res.status(400).json({ error: "field 'task' is required" });
     }
 
     const context = await run(task);
