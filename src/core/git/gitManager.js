@@ -14,6 +14,11 @@ export async function createBranch(branchName) {
   return runCli(`git checkout -b ${branchName}`);
 }
 
+export async function checkoutBranch(branchName) {
+  console.log(`Checking out branch: ${branchName}`);
+  return runCli(`git checkout ${branchName}`);
+}
+
 export async function stageAll() {
   console.log("Staging all changes...");
   return runCli("git add .");

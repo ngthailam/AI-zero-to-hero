@@ -11,6 +11,17 @@ export async function run(task) {
 
     Task: ${task}
 
+    The workflow should be as follows:
+
+    1. Create a new git branch
+    2. Write code for the task.
+    3. Write tests for the code you just wrote.
+    4. Run the tests and make sure they pass.
+    5. If tests fail, fix the code until tests pass. (max try 2 times)
+    6. Commit the code and push the branch to remote.
+    7. Create a PR to merge the branch to main.
+    8. Check the PR review comments and if there are any requested changes, make the changes and update the PR.
+
     Output: A JSON in the following format:
     {
       "files": [
