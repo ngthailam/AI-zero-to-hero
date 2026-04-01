@@ -1,5 +1,6 @@
 import { run as runOpenAi } from "../tools/openAi.js";
 import fs from "fs";
+import path from "path";
 
 export async function run(task) {
   console.log("Running code generation skill...");
@@ -10,13 +11,17 @@ export async function run(task) {
 
     Task: ${task}
 
-    Output: A Json in the following format:
+    Output: A JSON in the following format:
     {
-        "filePath": "the path to save the file, relative to the project root, project root is generated/src/, e.g. generated/src/sum.js",
-        "code": "the generated code as a string"
+      "files": [
+        {
+          "path": "path to save the file, relative to project root, under generated/src/, e.g. generated/src/calculator.js",
+          "content": "the generated code as a string"
+        }
+      ]
     }
 
-    No additional explanation. Do not wrap the response or code in any markdown or code block. Just return the raw code.
+    No additional explanation. Do not wrap the response or code in any markdown or code block. Just return the raw JSON.
   `;
 
   const res = await runOpenAi(prompt);
@@ -24,7 +29,10 @@ export async function run(task) {
 
   console.log("Code generation skill raw response:", jsonRes);
 
-  fs.writeFileSync(jsonRes.filePath, jsonRes.code);
-  
+  for (const file of jsonRes.files) {
+    fs.mkdirSync(path.dirname(file.path), { recursive: true });
+    fs.writeFileSync(file.path, file.content);
+  }
+
   return jsonRes;
 }

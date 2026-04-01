@@ -1,5 +1,7 @@
 import { run as runCodeGeneration } from "../skills/codeGeneration.js";
+import { run as runWriteTest } from "../skills/writeTest.js";
 import { run as runTest } from "../skills/runTest.js";
+import { run as runFixCode } from "../skills/fixCode.js";
 import { SKILL_TYPES } from "../utils/skillTypes.js";
 import { run as runOpenAi } from "../tools/openAi.js";
 
@@ -41,9 +43,21 @@ export async function run(task) {
     console.log(`Executing step with skill: ${step.skill_type}`);
     if (step.skill_type === SKILL_TYPES.GENERATE_CODE) {
       const output = await runCodeGeneration(step.task);
-      context.generate_code = output;
+      context[SKILL_TYPES.GENERATE_CODE] = output;
+    } else if (step.skill_type === SKILL_TYPES.WRITE_TEST) {
+      const input = step.input_from ? context[step.input_from] : null;
+      const output = await runWriteTest(step.task, input);
+      context[SKILL_TYPES.WRITE_TEST] = output;
     } else if (step.skill_type === SKILL_TYPES.RUN_TESTS) {
-      await runTest(step.task, context.generate_code);
+      const output = await runTest();
+      context[SKILL_TYPES.RUN_TESTS] = output;
+    } else if (step.skill_type === SKILL_TYPES.FIX_CODE) {
+      const input = {
+        code: context[SKILL_TYPES.GENERATE_CODE],
+        testResults: context[SKILL_TYPES.RUN_TESTS],
+      };
+      const output = await runFixCode(step.task, input);
+      context[SKILL_TYPES.FIX_CODE] = output;
     } else {
       console.error(`Unknown skill type: ${step.skill_type}`);
     }
