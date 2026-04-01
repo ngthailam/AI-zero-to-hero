@@ -15,3 +15,8 @@ export async function run(prompt) {
 
   return res.choices[0].message.content;
 }
+
+export function parseJson(text) {
+  const stripped = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return JSON.parse(stripped);
+}

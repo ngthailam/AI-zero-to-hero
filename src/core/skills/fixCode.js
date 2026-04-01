@@ -1,4 +1,4 @@
-import { run as runOpenAi } from "../tools/openAi.js";
+import { run as runOpenAi, parseJson } from "../tools/openAi.js";
 import fs from "fs";
 import path from "path";
 
@@ -28,7 +28,7 @@ export async function run(task, input) {
   `;
 
   const res = await runOpenAi(prompt);
-  const jsonRes = JSON.parse(res);
+  const jsonRes = parseJson(res);
 
   console.log("Fix code skill raw response:", jsonRes);
 
