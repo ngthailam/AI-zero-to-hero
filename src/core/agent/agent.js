@@ -2,10 +2,14 @@ import { run as runCodeGeneration } from "../skills/codeGeneration.js";
 import { run as runWriteTest } from "../skills/writeTest.js";
 import { run as runTest } from "../skills/runTest.js";
 import { run as runFixCode } from "../skills/fixCode.js";
+import { run as runGitCommit } from "../skills/gitCommit.js";
+import { run as runCreatePr } from "../skills/createPr.js";
+import { run as runCheckReview } from "../skills/checkReview.js";
 import { SKILL_TYPES } from "../utils/skillTypes.js";
 import { run as runOpenAi, parseJson } from "../tools/openAi.js";
 import { validateSteps } from "../validator/stepValidator.js";
 import { createContext } from "../memory/simpleContext.js";
+import { createBranch, slugify } from "../git/gitManager.js";
 
 const MAX_FIX_ATTEMPTS = 3;
 
@@ -22,37 +26,46 @@ function mergeFiles(context, files) {
   }
 }
 
+function getFilesList(context) {
+  return Object.entries(context.files).map(([path, content]) => ({ path, content }));
+}
+
 export async function run(task) {
   console.log("Running agent...");
-  const allowedSkills = Object.values(SKILL_TYPES).join(", ");
-  console.log("Allowed skills:", allowedSkills);
+  const planningSkills = [SKILL_TYPES.GENERATE_CODE, SKILL_TYPES.WRITE_TEST].join(", ");
+  console.log("Allowed skills:", planningSkills);
+
+  // Create a feature branch for this task
+  const branchName = `feature/${slugify(task)}`;
+  const branchResult = await createBranch(branchName);
+  if (!branchResult.success) {
+    console.warn("Could not create branch (may already exist):", branchResult.output);
+  }
 
   const prompt = `
   You are an AI agent designed to complete software development tasks.
 
   Your task is: ${task}
 
-  You have access to the following skills:
-  ${allowedSkills}
+  You have access to the following skills for planning: ${planningSkills}
 
-  Break the task down into steps and determine which skill to use for each step.
+  Break the task down into steps using only generate_code and write_test.
 
   Output should be a JSON array of steps in the following format:
   [
     {
-      "skill_type": "the type of skill to use, one of: ${allowedSkills}",
-      "task": "The input to provide to the skill. Clear and concise. Used as an AI prompt. e.g. 'Write a function that reverses a string in JavaScript'.",
-      "input_from": "the skill_type whose output feeds into this step, or null if none"
+      "skill_type": "generate_code or write_test",
+      "task": "Clear and concise task description used as an AI prompt."
     }
   ]
 
-  Do not include fix_code or run_tests in your plan — those are handled automatically after the initial steps.
   Return only the JSON array. No explanation.
   `;
 
   const res = await runOpenAi(prompt);
   const steps = parseJson(res);
   const context = createContext();
+  context.branchName = branchName;
   console.log("Agent parsed steps:", steps);
 
   validateSteps(steps);
@@ -66,12 +79,8 @@ export async function run(task) {
       output = await runCodeGeneration(step.task);
       mergeFiles(context, output.files);
     } else if (step.skill_type === SKILL_TYPES.WRITE_TEST) {
-      const input = { files: Object.entries(context.files).map(([path, content]) => ({ path, content })) };
-      output = await runWriteTest(step.task, input);
+      output = await runWriteTest(step.task, { files: getFilesList(context) });
       mergeFiles(context, output.files);
-    } else if (step.skill_type === SKILL_TYPES.RUN_TESTS) {
-      output = await runTest();
-      context.testResults = output;
     } else {
       console.error(`Unknown skill type: ${step.skill_type}`);
       continue;
@@ -80,24 +89,19 @@ export async function run(task) {
     context.history.push({ step: step.skill_type, result: output });
   }
 
-  // Auto write+run tests if not already in the plan
-  const hasWriteTest = steps.some(s => s.skill_type === SKILL_TYPES.WRITE_TEST);
-  const hasRunTests = steps.some(s => s.skill_type === SKILL_TYPES.RUN_TESTS);
-
-  if (!hasWriteTest) {
+  // Auto write tests if not in the plan
+  if (!steps.some(s => s.skill_type === SKILL_TYPES.WRITE_TEST)) {
     console.log("Auto-running WRITE_TEST...");
-    const input = { files: Object.entries(context.files).map(([path, content]) => ({ path, content })) };
-    const output = await runWriteTest("Write tests for the generated code", input);
+    const output = await runWriteTest("Write tests for the generated code", { files: getFilesList(context) });
     mergeFiles(context, output.files);
     context.history.push({ step: SKILL_TYPES.WRITE_TEST, result: output });
   }
 
-  if (!hasRunTests) {
-    console.log("Auto-running RUN_TESTS...");
-    const output = await runTest();
-    context.testResults = output;
-    context.history.push({ step: SKILL_TYPES.RUN_TESTS, result: output });
-  }
+  // Run tests
+  console.log("Auto-running RUN_TESTS...");
+  const testOutput = await runTest();
+  context.testResults = testOutput;
+  context.history.push({ step: SKILL_TYPES.RUN_TESTS, result: testOutput });
 
   // Fix loop
   let attempts = 0;
@@ -105,17 +109,16 @@ export async function run(task) {
     attempts++;
     console.log(`Tests failed. Running fix attempt ${attempts}/${MAX_FIX_ATTEMPTS}...`);
 
-    const fixInput = {
-      files: Object.entries(context.files).map(([path, content]) => ({ path, content })),
+    const fixOutput = await runFixCode("Fix the code so all tests pass", {
+      files: getFilesList(context),
       testResults: context.testResults,
-    };
-    const fixOutput = await runFixCode("Fix the code so all tests pass", fixInput);
+    });
     mergeFiles(context, fixOutput.files);
     context.history.push({ step: SKILL_TYPES.FIX_CODE, result: fixOutput });
 
-    const testOutput = await runTest();
-    context.testResults = testOutput;
-    context.history.push({ step: SKILL_TYPES.RUN_TESTS, result: testOutput });
+    const retestOutput = await runTest();
+    context.testResults = retestOutput;
+    context.history.push({ step: SKILL_TYPES.RUN_TESTS, result: retestOutput });
   }
 
   if (isTestSuccess(context.testResults)) {
@@ -124,5 +127,24 @@ export async function run(task) {
     console.log(`Tests still failing after ${MAX_FIX_ATTEMPTS} fix attempts.`);
   }
 
+  // Git commit + push
+  console.log("Auto-running GIT_COMMIT...");
+  const commitOutput = await runGitCommit(task, {
+    files: getFilesList(context),
+    branchName,
+  });
+  context.history.push({ step: SKILL_TYPES.GIT_COMMIT, result: commitOutput });
+
+  // Create PR
+  console.log("Auto-running CREATE_PR...");
+  const prOutput = await runCreatePr(task, {
+    files: getFilesList(context),
+    branchName,
+    testResults: context.testResults,
+  });
+  context.prUrl = prOutput.prUrl;
+  context.history.push({ step: SKILL_TYPES.CREATE_PR, result: prOutput });
+
+  console.log("PR created:", context.prUrl);
   return context;
 }

@@ -1,42 +1,40 @@
-# AI Agent System — Phase 4 (Production-Style)
-
 ## 🎯 Objective
 
-Build a context-aware, multi-file, self-correcting AI agent that:
+Extend the Phase 4 AI agent into a production-like system that:
 
-- Breaks down tasks into steps
-- Executes steps via predefined skills
-- Maintains shared state (context)
-- Generates and updates multiple files
-- Runs tests and fixes failures iteratively
-
----
-
-## 🧠 Architecture Overview
-
-System consists of:
-
-1. Planner (LLM)
-2. Validator (schema)
-3. Executor (skill runner)
-4. Context (shared state)
-5. Skills (modular tools)
-6. Loop (plan → execute → evaluate → replan)
+- Uses Git for version control
+- Creates commits automatically
+- Opens Pull Requests (PR)
+- Integrates with CI/CD pipelines
+- Provides review-ready outputs
 
 ---
 
-## 📦 Core Concepts
+## 🧠 Architecture Upgrade
+
+From:
+
+Phase 4:
+- Local files
+- Test loop
+- Context-aware agent
+
+To Phase 5:
+
+- Git-integrated workflow
+- Branch-based development
+- PR automation
+- CI/CD validation
 
 ---
 
-### 1. Shared Context (State)
+## 🧱 New Components
 
-All data flows through a single object:
+1. Git Manager
+2. Branch Strategy
+3. Commit Generator (AI-assisted)
+4. PR Creator
+5. CI/CD Trigger
+6. Review Feedback Loop
 
-```js
-const context = {
-  files: {},          // { [filePath]: content }
-  testResults: null,  // latest test execution result
-  history: [],        // [{ step, result }]
-};
-```
+---

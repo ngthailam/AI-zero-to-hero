@@ -11,10 +11,13 @@ router.post("/generate", async (req, res) => {
       return res.status(400).json({ error: "Feature is required" });
     }
 
-    await run(task);
+    const context = await run(task);
 
     res.json({
       message: "Task completed successfully",
+      prUrl: context.prUrl ?? null,
+      branch: context.branchName ?? null,
+      testsPassed: context.testResults?.success ?? false,
     });
   } catch (error) {
     console.error(error);

@@ -1,32 +1,43 @@
-# Plan — Phase 4 Implementation
+# Plan — Phase 5: Git Integration & PR Automation
 
-## What's Already Done
-- SKILL_TYPES: GENERATE_CODE, WRITE_TEST, RUN_TESTS, FIX_CODE ✓
-- All skill files implemented with multi-file output format ✓
-- Agent planner calls OpenAI and routes to skills ✓
+## What's Already Done (Phase 4)
+- Structured context { files, testResults, history } ✓
+- Step schema validator ✓
+- Auto fix loop (test → fix → retest, max 3 attempts) ✓
+- parseJson utility ✓
 
-## What Needs to Be Done
+## Phase 5 New Components
 
-### 1. Structured Context
-Replace the flat `{}` context in agent.js with the schema from phase.md:
-```js
-{ files: {}, testResults: null, history: [] }
-```
-- `files`: map of `{ [filePath]: content }` — updated after GENERATE_CODE and FIX_CODE
-- `testResults`: updated after RUN_TESTS
-- `history`: append `{ step, result }` after each skill execution
+### 1. gitManager.js (`src/core/git/gitManager.js`)
+Wraps git CLI operations via cliExecutor:
+- `createBranch(name)` — checkout -b feature/<slug>
+- `stageAll()` — git add .
+- `commit(message)` — git commit
+- `push(branch)` — git push -u origin
 
-### 2. Validator
-Create `src/core/validator/stepValidator.js` — validates the planner's JSON output against the required schema before execution. Throws on invalid steps so bad plans fail fast.
+### 2. New SKILL_TYPES
+- `GIT_COMMIT` — AI writes commit message, then commits + pushes
+- `CREATE_PR` — creates PR via `gh` CLI
+- `CHECK_REVIEW` — reads PR review comments via `gh` CLI
 
-### 3. Fix Loop
-After the planned steps complete, if `testResults` indicates failure:
-- Run FIX_CODE with current files + testResults
-- Run RUN_TESTS again
-- Repeat up to MAX_FIX_ATTEMPTS (3)
-- Stop early if tests pass
+### 3. New Skills
+- `gitCommit.js` — AI generates commit message from context, stages all, commits, pushes
+- `createPr.js` — uses `gh pr create` with AI-written title/body
+- `checkReview.js` — uses `gh pr view` to check review status/comments
 
-## Files to Change
-- `src/core/agent/agent.js` — structured context + loop
-- `src/core/memory/simpleContext.js` — update to new shape
-- `src/core/validator/stepValidator.js` — new file
+### 4. CI/CD
+- `.github/workflows/ci.yml` — runs `npm test` on push to feature/* and on PRs to main
+
+### 5. Agent.js Upgrades
+- At start: create feature branch from task slug
+- After fix loop: auto git commit + push + create PR
+- Store prUrl in context
+
+## Agent Flow (Phase 5)
+1. Create feature branch `feature/<task-slug>`
+2. Execute planned steps (generate_code, write_test)
+3. Auto run_tests if not in plan
+4. Fix loop (up to 3 attempts)
+5. Auto git_commit (AI message, push branch)
+6. Auto create_pr (AI title/body)
+7. Return context with prUrl
