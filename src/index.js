@@ -11,6 +11,14 @@ app.use("/api/tasks", taskRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// 🔥 Add this
+server.on("error", (err) => {
+  console.error("Server error:", err);
+});
+
+process.on("uncaughtException", console.error);
+process.on("unhandledRejection", console.error);
