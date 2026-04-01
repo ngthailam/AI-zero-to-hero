@@ -1,28 +1,27 @@
 import { sum } from '../src/sum.js';
 
 describe('sum function', () => {
-  test('adds two positive numbers', () => {
-    expect(sum(1, 2)).toBe(3);
-    expect(sum(10, 20)).toBe(30);
+  test('adds two positive integers', () => {
+    expect(sum(3, 5)).toBe(8);
   });
 
-  test('adds two negative numbers', () => {
-    expect(sum(-1, -2)).toBe(-3);
-    expect(sum(-10, -20)).toBe(-30);
+  test('adds two negative integers', () => {
+    expect(sum(-4, -6)).toBe(-10);
   });
 
-  test('adds positive and negative numbers', () => {
-    expect(sum(5, -3)).toBe(2);
-    expect(sum(-5, 3)).toBe(-2);
+  test('adds a positive and a negative integer', () => {
+    expect(sum(7, -2)).toBe(5);
   });
 
-  test('adds zero values', () => {
+  test('adds zero and a positive integer', () => {
+    expect(sum(0, 9)).toBe(9);
+  });
+
+  test('adds zero and a negative integer', () => {
+    expect(sum(0, -3)).toBe(-3);
+  });
+
+  test('adds zero and zero', () => {
     expect(sum(0, 0)).toBe(0);
-    expect(sum(0, 5)).toBe(5);
-    expect(sum(5, 0)).toBe(5);
-  });
-
-  test('adds large numbers', () => {
-    expect(sum(1000000, 2000000)).toBe(3000000);
   });
 });

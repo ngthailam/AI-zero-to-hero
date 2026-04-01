@@ -32,7 +32,7 @@ function getFilesList(context) {
 
 export async function run(task) {
   console.log("Running agent...");
-  const planningSkills = [SKILL_TYPES.GENERATE_CODE, SKILL_TYPES.WRITE_TEST].join(", ");
+  const planningSkills = Object.values(SKILL_TYPES).join(", ");
   console.log("Allowed skills:", planningSkills);
 
   // Create a feature branch for this task
@@ -66,7 +66,7 @@ export async function run(task) {
   const steps = parseJson(res);
   const context = createContext();
   context.branchName = branchName;
-  console.log("Agent parsed steps:", steps);
+  console.log("Agent steps:", steps);
 
   validateSteps(steps);
 
